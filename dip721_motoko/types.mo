@@ -263,11 +263,11 @@ public type CommonError = {
 };
 
 public type TokenMetadata = {
-    account_identifier: AccountIdentifier;
-    metadata: Metadata;
-    token_identifier: TokenIdentifier;
-    principal: Principal;
-    metadata_desc: MetadataDesc;
+    var account_identifier: AccountIdentifier;
+    var metadata: Metadata;
+    var token_identifier: TokenIdentifier;
+    var principal: Principal;
+    var metadata_desc: MetadataDesc;
 };
 
 // public type TokenLevelMetadata = {

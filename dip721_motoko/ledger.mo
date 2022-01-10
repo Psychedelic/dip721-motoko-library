@@ -31,11 +31,11 @@ module {
             let token_index_nat32 = Nat32.fromNat(token_index);
 
             let tokenMetadata: TokenMetadata = {
-                account_identifier = Principal.toText(to);
-                metadata = #nonfungible(null);
-                token_identifier = Types.into_token_identifier(token_index_nat32);
-                principal = to;
-                metadata_desc = metadata_desc;
+                var account_identifier = Principal.toText(to);
+                var metadata = #nonfungible(null);
+                var token_identifier = Types.into_token_identifier(token_index_nat32);
+                var principal = to;
+                var metadata_desc = metadata_desc;
             };
 
             let mintReceipt: MintReceiptPart = {
@@ -149,40 +149,30 @@ module {
         }
     };
 
-    public func transfer(from: User, to: User, token_identifier: TokenIdentifier) {
+public func transfer(from: User, to: User, token_identifier: TokenIdentifier) { 
         let token_index = Types.into_token_index(token_identifier);
-        let token_metadata = tokens.get(token_index);
+        var token_metadata = tokens.get(token_index);
 
-        switch(token_index) {
+        switch(token_metadata) {
             case(null) {};
-            case(?token_index) {
-                token_metadata.account_identifier := to;
-                token_metadata.principal := Utils.expect_principal(to);
-
-                var from_token_indexes = user_tokens.get(from);
-                switch(from_token_indexes) {
-                    case(null) {};
-                    case(?from_token_indexes) {
-                        if(index == from_token_indexes) {
-                            Array.filter(from_token_indexes, func(index) {index == token_index});
+            case(?token_metadata) {
+                switch(to) {
+                    case(#principal p) {
+                        var token_metadata = {
+                            var account_identifier = to;
+                            var principal = to;
                         };
-
-                        if(from_token_indexes.size() == 0) {
-                            user_tokens.remove(from);
-                        };
-                        
-                        user_tokens.get(#principal(to));
-                        switch(user_tokens) {
-                            case(null) {};
-                            case(?user_tokens) {
-                                user_tokens.put(to, Array.append(user_tokens, [token_index]));
-                            }
-                        }
-                    }
-                }
-            };
+                    };
+                    case(#address a) {};
+                };
+            }
         }
-};
+    }
+
+    
+
+
+
 
     // pub fn transfer(&mut self, from: &User, to: &User, token_identifier: &TokenIdentifier) {
     //     // changeing token owner in the tokens map
@@ -269,3 +259,53 @@ module {
 
     }
 }
+
+// public func transfer(from: User, to: User, token_identifier: TokenIdentifier) {
+    //     let token_index = Types.into_token_index(token_identifier);
+    //     var token_metadata = tokens.get(token_index);
+
+    //     switch(token_metadata) {
+    //         case(null) {};
+    //         case(?token_metadata) {
+    //             switch(to) {
+    //                 case(#principal p) {
+    //                     var token_metadata = {
+    //                         var account_identifier = to;
+    //                         var principal = to;
+    //                     };
+    //                 };
+    //                 case(#address a) {};
+    //             };
+
+    //             var from_token_indexes = user_tokens.get(from);
+
+    //             switch(from_token_indexes) {
+    //                 case(null) {};
+    //                 case(?from_token_indexes) {
+    //                     for (index in Array.vals(from_token_indexes)) {
+    //                         if(index == token_index) {
+    //                             Array.filter(from_token_indexes, func(i) {i == token_index});
+    //                         };
+
+    //                         if(from_token_indexes.size() == 0) {
+    //                         user_tokens.delete(from);
+
+    //                         user_tokens.get(to);
+    //                     switch(user_tokens) {
+    //                         case(null) {};
+    //                         case(?user_tokens) {
+    //                             user_tokens.put(to, Array.append(user_tokens, [token_index]));
+    //                         }
+    //                     }
+    //                     };
+    //                     }
+
+
+                        
+                        
+                        
+    //                 }
+    //             }
+    //         };
+    //     }
+// };
