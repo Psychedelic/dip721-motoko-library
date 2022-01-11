@@ -321,8 +321,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
                         };
 
                         approved.put(tokenId, user);
-                        // TODO;
-                        #Ok(0);
+                        txId := txId + 1;
+                        #Ok(txId);
                     };
                     case(approvedToken) {
                         #Err(#Unauthorized);
@@ -350,12 +350,13 @@ shared ({ caller = owner }) actor class DIP721() = this {
                     for(tokenId in _userTokens.vals()) {
                         let _exisingPrincipals = operators.get(tokenId);
                         var _buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
-
+                        
                         switch(_exisingPrincipals) {
                             case(null) {
                                 if(isApproved == true) {
                                     _buffer.add(operator);
                                     operators.put(tokenId, _buffer);
+                                    txId := txId + 1;
                                 } else {
                                     // There are no existing principals to remove;
                                     return #Err(#Other);
@@ -367,6 +368,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
                                 if(isApproved == true) {
                                     _buffer.add(operator);
                                     operators.put(tokenId, _buffer);
+                                    txId := txId + 1;
                                 } else {
                                     let _existingOperator = Array.find<Principal>(_exisingPrincipals.toArray(), func (p) { p == operator});
                                     switch(_existingOperator) {
@@ -376,13 +378,14 @@ shared ({ caller = owner }) actor class DIP721() = this {
                                         };
                                         case(?_existingOperator) {
                                             operators.put(tokenId, Utils.removePrincipalFromBuffer(operator, _buffer));
+                                            txId := txId + 1;
                                         }
                                     }
                                 }
                             };
                         }
                     };
-                #Ok(0);
+                #Ok(txId);
             };
         };
     };
