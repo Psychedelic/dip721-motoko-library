@@ -1,340 +1,133 @@
-import HashMap "mo:base/HashMap";
-import Nat32 "mo:base/Nat32";
-import Iter "mo:base/Iter";
-import Types "./types";
-import ledger "./ledger";
+import Types "./Types";
+import Buffer "mo:base/Buffer";
 
 actor {
-    type TokenIndex = Types.TokenIndex;
-    type TokenMetadata = Types.TokenMetadata;
-
-    private stable var ledger_entries : [(TokenIndex, TokenMetadata)] = [];
-    private stable var user_tokens_entries : [(TokenIndex, TokenMetadata)] = [];
-
-    private var ledger = HashMap.fromIter<TokenIndex,TokenMetadata>(ledger_entries.vals(), 0, Nat32.equal, func (x) { x });
-    private var user_tokens = HashMap.fromIter<TokenIndex,TokenMetadata>(user_tokens_entries.vals(), 0, Nat32.equal, func (x) { x });
-
-    system func preupgrade() {
-        ledger_entries := Iter.toArray(ledger.entries());
-        user_tokens_entries := Iter.toArray(user_tokens.entries());
-    };
-
-    system func postupgrade() {
-        ledger_entries := [];
-        user_tokens_entries := [];
-    };
-
-    public query func name(): async Text {
-        "NFT Canister";
-    };
-
+    //Count of all NFTs assigned to user.
     public query func balanceOfDip721(user: Principal): async Nat64 {
         0;
-    }
+    };
+
+    // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
+    public query func ownerOfDip721(token_id: Nat64): async Types.OwnerResult {
+
+    };
+
+    // Safely transfers token_id token from user from to user to. 
+    // If to is zero, then ApiError.ZeroAddress should be returned. 
+    // If the caller is neither the owner, nor an approved operator, 
+    // nor someone approved with the approveDip721 function, 
+    // then ApiError.Unauthorized should be returned. If token_id is not valid, 
+    // then ApiError.InvalidTokenId is returned.
+    public func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+
+    };
+
+    // Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
+    public func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+
+    };
+
+    // Returns the interfaces supported by this smart contract.
+    public query func supportedInterfacesDip721(): async [Types.InterfaceId] {
+
+    };
+
+    // Returns the logo of the NFT contract.
+    public query func logoDip721(): async Types.LogoResult {
+
+    };
+
+    // Returns the name of the NFT contract.
+    public query func nameDip721(): async Text {
+
+    };
+
+    // Returns the symbol of the NFT contract.
+    public query func symbolDip721(): async Text {
+
+    };
+
+    // Returns the total current supply of NFT tokens. 
+    // NFTs that are minted and later burned explictely or 
+    // sent to the zero address should also count towards totalSupply.
+    public query func totalSupplyDip721 (): async Nat64 {
+
+    };
+
+    // Returns the metadata for token_id. Returns ApiError.InvalidTokenId, if the token_id is invalid.
+    public query func getMetadataDip721(token_id: Nat64): async Types.MetadataResult {
+
+    };
+
+    // Returns all the metadata for the coins user owns.
+    public func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
+
+    };
+
+    // Same as safeTransferFromDip721, but to is treated as a smart contract that implements the Notification interface. 
+    // Upon successful transfer onDIP721Received is called with data.
+    public func safeTransferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64, data: [Nat8]): async Types.TxReceipt {
+
+    };
+
+    // Same as transferFromDip721, but to is treated as a smart contract that implements the Notification interface. 
+    // Upon successful transfer onDIP721Received is called with data.
+    public func transferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64,  data: [Nat8]): async Types.TxReceipt {
+
+    };
+
+    // Change or reaffirm the approved address for an NFT. 
+    // The zero address indicates there is no approved address. 
+    // Only one user can be approved at a time to manage token_id. 
+    // Approvals given by the approveDip721 function are independent from 
+    // approvals given by the setApprovalForAllDip721. 
+    // Returns ApiError.InvalidTokenId, if the token_id is not valid. 
+    // Returns ApiError.Unauthorized in case the caller neither owns 
+    // token_id nor he is an operator approved by a call to the setApprovalForAll function.
+    public query func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
+
+    };
+
+    // Enable or disable an operator to manage all of the tokens for the caller of this function. 
+    // Multiple operators can be given permission at the same time. 
+    // Approvals granted by the approveDip721 function are independent from the approvals 
+    // granted by setApprovalForAll function. The zero address indicates there are no approved operators.
+    public func setApprovalForAllDip721(operator: Principal, isApproved: Bool): async Types.TxReceipt {
+
+    };
+
+    // Returns the approved user for token_id. Returns ApiError.InvalidTokenId if the token_id is invalid.
+    public query func getApprovedDip721(token_id: Nat64): async Types.TxReceipt {
+
+    };
+
+    // Returns true if the given operator is an approved operator for all the tokens owned by the caller, returns false otherwise.
+    public query func isApprovedForAllDip721(operator: Principal): async Bool {
+
+    };
+
+    // Mint an NFT for principal to. 
+    // The parameter blobContent is non zero, if the NFT contract embeds the NFTs in the smart contract. 
+    // Implementations are encouraged to only allow minting by the owner of the smart contract. 
+    // Returns ApiError.Unauthorized, if the caller doesn't have the permission to mint the NFT.
+    public func mintDip721(to: Principal, metadata: Types.Metadata, blobContent: Blob): async Types.MintReceipt {
+        
+    };
+
+    // Burn an NFT identified by token_id. Implementations are encouraged to only allow burning by the owner of the token_id. 
+    // Returns ApiError.Unauthorized, if the caller doesn't have the permission to burn the NFT. Returns ApiError.InvalidTokenId, 
+    // if the provided token_id doesn't exist.
+    public func burnDip721(token_id: Nat64): async Types.TxReceipt {
+
+    };
+
+    // transferFromNotifyDip721 and safeTransferFromNotifyDip721 functions can 
+    // - upon successfull NFT transfer 
+    // - notify other smart contracts that adhere to the following interface.
+    // caller is the entity that called the transferFromNotifyDip721 or safeTransferFromNotifyDip721 function, and from is the previous owner of the NFT.
+    
+    // ??????
+    // public func onDIP721Received: (address caller, address from, uint256 token_id, bytes data) -> ();
+    // ?????
+
 }
-
-/// HEALTH-CHECK ///
-// #[query]
-// fn name() -> String {
-//     String::from("NFT Canister")
-// }
-
-// /// BEGIN DIP-721 ///
-// #[query(name = "balanceOfDip721")]
-// fn balance_of_dip721(user: Principal) -> u64 {
-//     ledger().balance_of(&user.into())
-// }
-
-// #[query(name = "ownerOfDip721")]
-// fn owner_of_dip721(token_id: u64) -> Result<Principal, ApiError> {
-//     ledger().owner_of(&token_id.to_string())
-// }
-
-// #[update(name = "safeTransferFromDip721")]
-// async fn safe_transfer_from_dip721(_from: Principal, to: Principal, token_id: u64) -> TxReceipt {
-//     if !is_fleek(&ic::caller()) {
-//         return Err(ApiError::Unauthorized);
-//     }
-//     assert_ne!(
-//         to,
-//         Principal::from_slice(&[0; 29]),
-//         "transfer request to cannot be the zero principal"
-//     );
-
-//     ledger().transfer(
-//         &User::principal(caller()),
-//         &User::principal(to),
-//         &token_id.to_string(),
-//     );
-
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("transfer")
-//         .details(vec![
-//             ("from".into(), DetailValue::Principal(caller())),
-//             ("to".into(), DetailValue::Principal(to)),
-//             ("token_id".into(), DetailValue::U64(token_id)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-
-//     Ok(tx_id.into())
-// }
-
-// #[update(name = "transferFromDip721")]
-// async fn transfer_from_dip721(_from: Principal, to: Principal, token_id: u64) -> TxReceipt {
-//     if !is_fleek(&ic::caller()) {
-//         return Err(ApiError::Unauthorized);
-//     }
-//     assert_ne!(
-//         caller(),
-//         to,
-//         "transfer request caller and to cannot be the same"
-//     );
-
-//     ledger().transfer(
-//         &User::principal(caller()),
-//         &User::principal(to),
-//         &token_id.to_string(),
-//     );
-
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("transfer")
-//         .details(vec![
-//             ("from".into(), DetailValue::Principal(caller())),
-//             ("to".into(), DetailValue::Principal(to)),
-//             ("token_id".into(), DetailValue::U64(token_id)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-
-//     Ok(tx_id)
-// }
-
-// #[query(name = "supportedInterfacesDip721")]
-// fn supported_interfaces_dip721() -> Vec<InterfaceId> {
-//     vec![InterfaceId::Mint, InterfaceId::TransactionHistory]
-// }
-
-// #[query(name = "logoDip721")]
-// fn logo_dip721() -> LogoResult {
-//     unimplemented!();
-// }
-
-// #[query(name = "nameDip721")]
-// fn name_dip721() -> &'static str {
-//     &token_level_metadata().name
-// }
-
-// #[query(name = "symbolDip721")]
-// fn symbol_dip721() -> &'static str {
-//     &token_level_metadata().symbol
-// }
-
-// #[query(name = "totalSupplyDip721")]
-// fn total_supply_dip721() -> u64 {
-//     ledger().total_supply()
-// }
-
-// #[query(name = "getMetadataDip721")]
-// fn get_metadata_dip721(token_id: u64) -> MetadataResult {
-//     ledger().get_metadata(token_id)
-// }
-
-// #[query(name = "getMaxLimitDip721")]
-// fn get_max_limit_dip721() -> u16 {
-//     200
-// }
-
-// #[allow(unreachable_code, unused_variables)]
-// #[query(name = "getMetadataForUserDip721")]
-// fn get_metadata_for_user_dip721(user: Principal) -> Vec<ExtendedMetadataResult> {
-//     ledger().get_metadata_for_user(&user)
-// }
-
-// #[allow(unreachable_code, unused_variables)]
-// #[query(name = "getTokenIdsForUserDip721")]
-// fn get_token_ids_for_user_dip721(user: Principal) -> Vec<u64> {
-//     ledger().get_token_ids_for_user(&user)
-// }
-
-// #[update(name = "mintDip721")]
-// async fn mint_dip721(to: Principal, metadata_desc: MetadataDesc) -> MintReceipt {
-//     if !is_fleek(&ic::caller()) {
-//         return Err(ApiError::Unauthorized);
-//     }
-//     let response = ledger().mintNFT(&to, &metadata_desc).unwrap();
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("mint")
-//         .details(vec![
-//             ("to".into(), DetailValue::Principal(to)),
-//             ("token_id".into(), DetailValue::U64(response.token_id)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-
-//     Ok(MintReceiptPart {
-//         token_id: response.token_id,
-//         id: tx_id.into(),
-//     })
-// }
-
-// /// END DIP-721 ///
-
-// #[update]
-// async fn transfer(transfer_request: TransferRequest) -> TransferResponse {
-//     if !is_fleek(&ic::caller()) {
-//         return Err(TransferError::Unauthorized("Not Admin".to_string()));
-//     }
-//     expect_principal(&transfer_request.from);
-//     expect_principal(&transfer_request.to);
-//     assert_ne!(
-//         transfer_request.from, transfer_request.to,
-//         "transfer request from and to cannot be the same"
-//     );
-//     assert_eq!(transfer_request.amount, 1, "only amount 1 is supported");
-//     expect_caller_general(&transfer_request.from, transfer_request.subaccount);
-
-//     ledger().transfer(
-//         &User::principal(caller()),
-//         &transfer_request.to,
-//         &transfer_request.token,
-//     );
-
-//     let token_id = &transfer_request.token.parse::<u64>().unwrap();
-
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("transfer")
-//         .details(vec![
-//             (
-//                 "from".into(),
-//                 user_to_detail_value(User::principal(caller())),
-//             ),
-//             ("to".into(), user_to_detail_value(transfer_request.to)),
-//             ("token_id".into(), DetailValue::U64(*token_id)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-
-//     Ok(Nat::from(tx_id))
-// }
-
-// #[allow(non_snake_case, unreachable_code, unused_variables)]
-// #[update]
-// async fn mintNFT(mint_request: MintRequest) -> Option<TokenIdentifier> {
-//     trap("Disabled as current EXT metadata doesn't allow multiple assets per token");
-//     if !is_fleek(&ic::caller()) {
-//         return None;
-//     }
-//     expect_principal(&mint_request.to);
-//     expect_caller(&token_level_metadata().owner.expect("token owner not set"));
-
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("mint")
-//         .details(vec![
-//             ("to".into(), user_to_detail_value(mint_request.to)),
-//             ("token_id".into(), DetailValue::U64(123)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-//     Some(tx_id.to_string())
-// }
-
-// #[query]
-// fn bearer(token_identifier: TokenIdentifier) -> AccountIdentifierReturn {
-//     ledger().bearer(&token_identifier)
-// }
-
-// #[allow(unreachable_code, unused_variables)]
-// #[query(name = "getAllMetadataForUser")]
-// fn get_all_metadata_for_user(user: User) -> Vec<TokenMetadata> {
-//     trap("Disabled as current EXT metadata doesn't allow multiple assets per token");
-//     ledger().get_all_metadata_for_user(&user)
-// }
-
-// #[query]
-// fn supply(token_identifier: TokenIdentifier) -> BalanceReturn {
-//     ledger().supply(&token_identifier)
-// }
-
-// #[allow(unreachable_code, unused_variables)]
-// #[query]
-// fn metadata(token_identifier: TokenIdentifier) -> MetadataReturn {
-//     trap("Disabled as current EXT metadata doesn't allow multiple assets per token");
-//     ledger().metadata(&token_identifier)
-// }
-
-// #[update]
-// async fn add(transfer_request: TransferRequest) -> Option<TransactionId> {
-//     if !is_fleek(&ic::caller()) {
-//         return None;
-//     }
-//     expect_principal(&transfer_request.from);
-//     expect_principal(&transfer_request.to);
-
-//     let token_id = &transfer_request.token.parse::<u64>().unwrap();
-
-//     let event = IndefiniteEventBuilder::new()
-//         .caller(caller())
-//         .operation("transfer_from")
-//         .details(vec![
-//             ("to".into(), user_to_detail_value(transfer_request.to)),
-//             ("from".into(), user_to_detail_value(transfer_request.from)),
-//             ("token_id".into(), DetailValue::U64(*token_id)),
-//         ])
-//         .build()
-//         .unwrap();
-
-//     let tx_id = insert_into_cap(event).await.unwrap();
-
-//     Some(Nat::from(tx_id))
-// }
-
-// fn store_data_in_stable_store() {
-//     let data = StableStorageBorrowed {
-//         ledger: ledger(),
-//         token: token_level_metadata(),
-//         fleek: fleek_db(),
-//     };
-//     ic::stable_store((data,)).expect("failed");
-// }
-
-// fn restore_data_from_stable_store() {
-//     let (data,): (StableStorage,) = ic::stable_restore().expect("failed");
-//     ic::store(data.ledger);
-//     ic::store(data.token);
-//     ic::store(data.fleek);
-// }
-
-// #[init]
-// fn init(owner: Principal, symbol: String, name: String, history: Principal) {
-//     ic::store(Fleek(vec![ic::caller()]));
-//     *token_level_metadata() = TokenLevelMetadata::new(Some(owner), symbol, name, Some(history));
-//     handshake(1_000_000_000_000, Some(history));
-// }
-
-// #[pre_upgrade]
-// fn pre_upgrade() {
-//     ic_cdk::api::print(format!("Executing preupgrade"));
-//     store_data_in_stable_store();
-// }
-
-// #[post_upgrade]
-// fn post_upgrade() {
-//     ic_cdk::api::print(format!("Executing postupgrade"));
-//     restore_data_from_stable_store();
-// }
