@@ -364,8 +364,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
                             case(?_exisingPrincipals) {
                                 _buffer := _exisingPrincipals;
-                                _buffer.add(operator);
                                 if(isApproved == true) {
+                                    _buffer.add(operator);
                                     operators.put(tokenId, _buffer);
                                 } else {
                                     let _existingOperator = Array.find<Principal>(_exisingPrincipals.toArray(), func (p) { p == operator});
