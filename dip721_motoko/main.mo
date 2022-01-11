@@ -6,6 +6,7 @@ import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
+import notifyService "./notifyService";
 import _extendedMetaDataResult "mo:base/Blob";
 import Principal "mo:base/Principal";
 import AccountIdentifier "./AccountIdentifier";
@@ -127,6 +128,29 @@ shared ({ caller = owner }) actor class DIP721() = this {
         };
     };
 
+    public shared({ caller }) func safeTransferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64, data: [Nat8]): async Types.TxReceipt {
+        if(Utils.isAnonymous(to)){return #Err(#ZeroAddress);};
+        let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
+        let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
+        let isOwner = _ownerOfDip721(token_id);
+        switch(isOwner){
+            case(#Ok(value)){
+                if(isApproved or isOperator){
+                    _setOwnerOfDip721(token_id, caller);
+                    txId := txId+1;
+                    let _txId = txId;
+                    await notifyService.notify(caller,from,token_id,data);
+                    #Ok(_txId);
+                }else {
+                    return #Err(#Unauthorized);
+                };
+            };
+            case(#Err(value)){
+                return #Err(value);
+            };
+        };
+    };
+
     //Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
     public shared({ caller }) func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
@@ -139,6 +163,29 @@ shared ({ caller = owner }) actor class DIP721() = this {
                     _setOwnerOfDip721(token_id, caller);
                     txId := txId+1;
                     #Ok(txId);
+                }else {
+                    return #Err(#Unauthorized);
+                };
+            };
+            case(#Err(value)){
+                return #Err(value);
+            };
+        };
+    };
+
+    public shared({ caller }) func transferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64, data: [Nat8]): async Types.TxReceipt {
+        let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
+        let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
+        let isOwner = _ownerOfDip721(token_id);
+        switch(isOwner){
+
+            case(#Ok(value)){
+                if(isApproved or isOperator){
+                    _setOwnerOfDip721(token_id, caller);
+                    txId := txId+1;
+                    let _txId = txId;
+                    await notifyService.notify(caller,from,token_id,data);
+                    #Ok(_txId);
                 }else {
                     return #Err(#Unauthorized);
                 };
