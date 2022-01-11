@@ -8,11 +8,21 @@ import Types "./types";
 import Utils "./utils";
 import _userTokenEntries "mo:base/Blob";
 
-actor {
+shared ({ caller = owner }) actor class DIP721() = this {
 
     type TokenIndex = Types.TokenIndex;
     type TokenMetadata = Types.TokenMetadata;
     type User = Types.User;
+    type TokenLevelMetadata = Types.TokenLevelMetadata;
+
+    private stable var isInitialized: Bool = false;
+    private stable var token_level_metadata: TokenLevelMetadata = {
+        owner = null;
+        symbol = "";
+        name = "";
+        history = null;
+    };
+
 
     private stable var tokenEntries : [(TokenIndex, TokenMetadata)] = [];
     private stable var userTokenEntries : [(User, [TokenIndex])] = [];
@@ -28,6 +38,19 @@ actor {
     system func postupgrade() {
         tokenEntries := [];
         userTokenEntries := [];
+    };
+
+    public shared({caller}) func init(symbol: Text, name: Text, history: Principal) {
+        assert(caller == owner and isInitialized == false);
+        
+        token_level_metadata := {
+            owner = ?caller;
+            symbol = symbol;
+            name = name;
+            history = ?history;
+        };
+
+        isInitialized := true;
     };
 
     //Count of all NFTs assigned to user.
@@ -73,20 +96,23 @@ actor {
 
 //     };
 
-//     // Returns the interfaces supported by this smart contract.
-//     public query func supportedInterfacesDip721(): async [Types.InterfaceId] {
+    // Returns the interfaces supported by this smart contract.
+    public query func supportedInterfacesDip721(): async [Types.InterfaceId] {
+        [#Mint, #TransactionHistory];
+    };
 
-//     };
+    // Returns the logo of the NFT contract.
+    public query func logoDip721(): async Types.LogoResult {
+        {
+            logo_type = "Not implemented";
+            data = "Not implemented";
+        }
+    };
 
-//     // Returns the logo of the NFT contract.
-//     public query func logoDip721(): async Types.LogoResult {
+    // Returns the name of the NFT contract.
+    public query func nameDip721(): async Text {
 
-//     };
-
-//     // Returns the name of the NFT contract.
-//     public query func nameDip721(): async Text {
-
-//     };
+    };
 
 //     // Returns the symbol of the NFT contract.
 //     public query func symbolDip721(): async Text {

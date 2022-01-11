@@ -270,12 +270,12 @@ public type TokenMetadata = {
     metadata_desc: MetadataDesc;
 };
 
-// // public type TokenLevelMetadata = {
-// //     owner: ?Principal;
-// //     symbol: Text;
-// //     name: Text;
-// //     history: ?Principal;
-// // };
+public type TokenLevelMetadata = {
+    owner: ?Principal;
+    symbol: Text;
+    name: Text;
+    history: ?Principal;
+};
 
 // // public type Transaction = {
 // //     txid: TransactionId;
