@@ -6,6 +6,7 @@ import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
+import _extendedMetaDataResult "mo:base/Blob";
 import _userTokenEntries "mo:base/Blob";
 
 shared ({ caller = owner }) actor class DIP721() = this {
@@ -16,7 +17,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     type TokenLevelMetadata = Types.TokenLevelMetadata;
 
     private stable var isInitialized: Bool = false;
-    private stable var token_level_metadata: TokenLevelMetadata = {
+    private stable var tokenLevelMetadata: TokenLevelMetadata = {
         owner = null;
         symbol = "";
         name = "";
@@ -43,7 +44,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     public shared({caller}) func init(symbol: Text, name: Text, history: Principal) {
         assert(caller == owner and isInitialized == false);
         
-        token_level_metadata := {
+        tokenLevelMetadata := {
             owner = ?caller;
             symbol = symbol;
             name = name;
@@ -68,8 +69,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
     };
 
     // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
-    public query func ownerOfDip721(tokenId: Nat64): async Types.OwnerResult {
-        let _token = Nat64.toNat(tokenId);
+    public query func ownerOfDip721(token_id: Nat64): async Types.OwnerResult {
+        let _token = Nat64.toNat(token_id);
         let token = tokens.get(Nat32.fromNat(_token));
         switch(token) {
             case(null) {
@@ -111,30 +112,62 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     // Returns the name of the NFT contract.
     public query func nameDip721(): async Text {
-
+        tokenLevelMetadata.name;
     };
 
-//     // Returns the symbol of the NFT contract.
-//     public query func symbolDip721(): async Text {
+    // Returns the symbol of the NFT contract.
+    public query func symbolDip721(): async Text {
+        tokenLevelMetadata.symbol;
+    };
 
-//     };
+    // Returns the total current supply of NFT tokens. 
+    // NFTs that are minted and later burned explictely or 
+    // sent to the zero address should also count towards totalSupply.
+    public query func totalSupplyDip721 (): async Nat64 {
+        let _tokens = tokens.size();
+        Nat64.fromNat(_tokens);
+    };
 
-//     // Returns the total current supply of NFT tokens. 
-//     // NFTs that are minted and later burned explictely or 
-//     // sent to the zero address should also count towards totalSupply.
-//     public query func totalSupplyDip721 (): async Nat64 {
+    // Returns the metadata for token_id. Returns ApiError.InvalidTokenId, if the token_id is invalid.
+    public query func getMetadataDip721(token_id: Nat64): async Types.MetadataResult {
+        let _token = Nat64.toNat(token_id);
+        let token = tokens.get(Nat32.fromNat(_token));
+        switch(token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?token) {
+                #Ok(token.metadata_desc);
+            };
+        }
+    };
 
-//     };
-
-//     // Returns the metadata for token_id. Returns ApiError.InvalidTokenId, if the token_id is invalid.
-//     public query func getMetadataDip721(token_id: Nat64): async Types.MetadataResult {
-
-//     };
-
-//     // Returns all the metadata for the coins user owns.
-//     public func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
-
-//     };
+    // Returns all the metadata for the coins user owns.
+    public func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
+        let _userTokens = userTokens.get(#principal(user));
+        switch(_userTokens) {
+            case(null) {
+                [];
+            };
+            case(?_userTokens) {
+                let _extendedMetaDataResult = Buffer.Buffer<Types.ExtendedMetadataResult>(0);
+                for(tokenId in _userTokens.vals()) {
+                    let _token = tokens.get(tokenId);
+                    switch(_token) {
+                        case(null) {};
+                        case(?_token) {
+                            let _tokenId = Nat32.toNat(tokenId);
+                            _extendedMetaDataResult.add({
+                                metadata_desc = _token.metadata_desc; 
+                                token_id = Nat64.fromNat(_tokenId);
+                                });
+                            };
+                        };
+                    };
+                _extendedMetaDataResult.toArray();
+            };
+        }
+    };
 
 //     // Same as safeTransferFromDip721, but to is treated as a smart contract that implements the Notification interface. 
 //     // Upon successful transfer onDIP721Received is called with data.
