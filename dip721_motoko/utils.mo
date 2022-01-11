@@ -3,7 +3,8 @@ import Hash "mo:base/Hash";
 import Iter "mo:base/Iter";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
-import Types "./Types";
+import HashMap "mo:base/HashMap";
+import Types "./types";
 import _userTokens "mo:base/Blob";
 
 module {
@@ -23,10 +24,10 @@ module {
     };
 
     public func compareUser(a: User, b: User): Bool {
-        a ==b;
+        a == b;
     };
 
-    public func tokenIndexToBuffer(userTokens: [(User, [TokenIndex])]): [(User, Buffer.Buffer<TokenIndex>)] {
+    public func mapUserTokensForHashmap(userTokens: [(User, [TokenIndex])]): [(User, Buffer.Buffer<TokenIndex>)] {
         let _userTokens: Buffer.Buffer<(User, Buffer.Buffer<TokenIndex>)> = Buffer.Buffer(0);
 
         for ((user, indexes) in userTokens.vals()) {
@@ -38,5 +39,14 @@ module {
         };
         
         _userTokens.toArray();
+    };
+    
+    public func mapUserTokenForUpgrade(userTokens: HashMap.HashMap<User, Buffer.Buffer<TokenIndex>>): [(User, [TokenIndex])] {
+        let _userTokenEntries: Buffer.Buffer<(User, [TokenIndex])> = Buffer.Buffer(0);
+        for((user, indexes) in userTokens.entries()) {
+            _userTokenEntries.add(user, indexes.toArray());
+        };
+
+        _userTokenEntries.toArray();
     };
 }
