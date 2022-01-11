@@ -26,9 +26,13 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     private stable var tokenEntries : [(TokenIndex, TokenMetadata)] = [];
     private stable var userTokenEntries : [(User, [TokenIndex])] = [];
+    private stable var approvedEntries : [(TokenIndex, Principal)] = [];
+    private stable var operatorEntries : [(TokenIndex, Buffer.Buffer<Principal>)] = [];
 
     private var tokens = HashMap.fromIter<TokenIndex,TokenMetadata>(tokenEntries.vals(), 0, Nat32.equal, func(v) {v});
     private var userTokens = HashMap.fromIter<User, Buffer.Buffer<TokenIndex>>(Utils.mapUserTokensForHashmap(userTokenEntries).vals(), 0, Utils.compareUser, Utils.hashUser);
+    private var approved = HashMap.fromIter<TokenIndex, Principal>(approvedEntries.vals(), 0, Nat32.equal, func(v) {v});
+    private var operators = HashMap.fromIter<TokenIndex, Buffer.Buffer<Principal>>(operatorEntries.vals(), 0, Nat32.equal, func(v) {v});
 
     system func preupgrade() {
         tokenEntries := Iter.toArray(tokens.entries());
@@ -69,8 +73,19 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
     public query func ownerOfDip721(token_id: Nat64): async Types.OwnerResult {
-        let _token = Nat64.toNat(token_id);
-        let token = tokens.get(Nat32.fromNat(_token));
+        let token = tokens.get(Utils.toTokenIndex(token_id));
+        switch(token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?token) {
+                #Ok(token.principal);
+            };
+        }
+    };
+
+    private func _ownerOfDip721(token_id: Nat64): Types.OwnerResult {
+        let token = tokens.get(Utils.toTokenIndex(token_id));
         switch(token) {
             case(null) {
                 #Err(#InvalidTokenId);
@@ -87,37 +102,78 @@ shared ({ caller = owner }) actor class DIP721() = this {
 //     // nor someone approved with the approveDip721 function, 
 //     // then ApiError.Unauthorized should be returned. If token_id is not valid, 
 //     // then ApiError.InvalidTokenId is returned.
-//     public func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+    public shared({ caller }) func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+        if(to == 0){return #Err(#ZeroAddress);};
+        let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
+        let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
+        let isOwner = _ownerOfDip721(token_id);
+        switch(isOwner){
+            case(#Ok(value)){
+                if(isApproved or isOperator){
 
-//     };
+                }else {
+                    return #Err(#Unauthorized);
+                };
+            };
+            case(#Err(value)){
+                reutrn value;
+            };
+        };
+    };
 
-    // Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
-    // public shared({ caller }) func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
-    //     assert(caller != to);
+    //Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
+    public shared({ caller }) func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+        assert(caller != to);
 
-    //     if(caller != from) {
-    //         return #Err(#Unauthorized);
-    //     };
+        if(caller != from) {
+            return #Err(#Unauthorized);
+        };
 
-    //     let _userTokenIndexes = userTokens.get(#principal(from));
-    //     switch(_userTokenIndexes) {
-    //         case(null) {
-    //             #Err(#Unauthorized);
-    //         };
-    //         case(?_userTokenIndexes) {
-    //             let _tokenId = Nat64.toNat(token_id);
-    //             let _exisingToken = Array.find<TokenIndex>(_userTokenIndexes.toArray(), func (i) {i == Nat32.fromNat(_tokenId)});
-    //             switch(_exisingToken) {
-    //                 case(null) {
-    //                     #Err(#Unauthorized);
-    //                 };
-    //                 case(?_exisingToken) {
-    //                     // userTokens.put(#principal(from), _userTokenIndexes.delete(token_id));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // };
+        let _userTokenIndexes = userTokens.get(#principal(from));
+        switch(_userTokenIndexes) {
+            case(null) {
+                #Err(#Unauthorized);
+            };
+            case(?_userTokenIndexes) {
+                let _exisingToken = Array.find<TokenIndex>(_userTokenIndexes.toArray(), func (i) {i == Utils.toTokenIndex(token_id)});
+                switch(_exisingToken) {
+                    case(null) {
+                        #Err(#Unauthorized);
+                    };
+                    case(?_exisingToken) {
+                        //userTokens.put(#principal(from), _userTokenIndexes.delete(token_id));
+                    }
+                }
+            }
+        }
+    };
+
+    private func _isApproved(tokenIndex:TokenIndex, user:Principal): Bool {
+        let exist = approved.get(tokenIndex);
+        switch(exist) {
+            case(?exist){
+                return true;
+            };
+            case(null) {
+                return false;
+            };
+        };
+    };
+
+    private func _isOperator(tokenIndex:TokenIndex, user:Principal): Bool {
+        let exist = operators.get(tokenIndex);
+        switch(exist) {
+            case(?exist){
+                for(op in exist.vals()){
+                    if(op == user) {return true}
+                };
+            };
+            case(null) {
+                return false;
+            };
+        };
+        return false;
+    };
 
     // Returns the interfaces supported by this smart contract.
     public query func supportedInterfacesDip721(): async [Types.InterfaceId] {
@@ -152,8 +208,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     // Returns the metadata for token_id. Returns ApiError.InvalidTokenId, if the token_id is invalid.
     public query func getMetadataDip721(token_id: Nat64): async Types.MetadataResult {
-        let _token = Nat64.toNat(token_id);
-        let token = tokens.get(Nat32.fromNat(_token));
+        let token = tokens.get(Utils.toTokenIndex(token_id));
         switch(token) {
             case(null) {
                 #Err(#InvalidTokenId);
@@ -178,10 +233,9 @@ shared ({ caller = owner }) actor class DIP721() = this {
                     switch(_token) {
                         case(null) {};
                         case(?_token) {
-                            let _tokenId = Nat32.toNat(tokenId);
                             _extendedMetaDataResult.add({
                                 metadata_desc = _token.metadata_desc; 
-                                token_id = Nat64.fromNat(_tokenId);
+                                token_id = Utils.toTokenId(tokenId);
                                 });
                             };
                         };
@@ -216,11 +270,10 @@ shared ({ caller = owner }) actor class DIP721() = this {
 //     };
 
 //     // Enable or disable an operator to manage all of the tokens for the caller of this function. 
-//     // Multiple operators can be given permission at the same time. 
+//     // Multiple operators can be given permission at the same time. w
 //     // Approvals granted by the approveDip721 function are independent from the approvals 
 //     // granted by setApprovalForAll function. The zero address indicates there are no approved operators.
 //     public func setApprovalForAllDip721(operator: Principal, isApproved: Bool): async Types.TxReceipt {
-
 //     };
 
 //     // Returns the approved user for token_id. Returns ApiError.InvalidTokenId if the token_id is invalid.
@@ -228,7 +281,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
 //     };
 
-//     // Returns true if the given operator is an approved operator for all the tokens owned by the caller, returns false otherwise.
+//     // Returns true if the given operator is an approved operator for all the tokens owned by the caller, returns false otherwise.w
 //     public query func isApprovedForAllDip721(operator: Principal): async Bool {
 
 //     };

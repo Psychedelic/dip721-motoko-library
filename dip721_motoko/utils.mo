@@ -6,6 +6,8 @@ import Text "mo:base/Text";
 import HashMap "mo:base/HashMap";
 import Types "./types";
 import _userTokens "mo:base/Blob";
+import Nat64 "mo:base/Nat64";
+import Nat32 "mo:base/Nat32";
 
 module {
 
@@ -48,5 +50,15 @@ module {
         };
 
         _userTokenEntries.toArray();
+    };
+
+    public func toTokenIndex(value:Nat64) : Nat32 {
+        let _value = Nat64.toNat(value);
+        Nat32.fromNat(_value);
+    };
+
+    public func toTokenId(value:Nat32) : Nat64 {
+        let _value = Nat32.toNat(value);
+        Nat64.fromNat(_value);
     };
 }
