@@ -7,7 +7,6 @@ import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
 import _extendedMetaDataResult "mo:base/Blob";
-import _userTokenEntries "mo:base/Blob";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
@@ -92,10 +91,33 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
 //     };
 
-//     // Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
-//     public func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+    // Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
+    // public shared({ caller }) func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
+    //     assert(caller != to);
 
-//     };
+    //     if(caller != from) {
+    //         return #Err(#Unauthorized);
+    //     };
+
+    //     let _userTokenIndexes = userTokens.get(#principal(from));
+    //     switch(_userTokenIndexes) {
+    //         case(null) {
+    //             #Err(#Unauthorized);
+    //         };
+    //         case(?_userTokenIndexes) {
+    //             let _tokenId = Nat64.toNat(token_id);
+    //             let _exisingToken = Array.find<TokenIndex>(_userTokenIndexes.toArray(), func (i) {i == Nat32.fromNat(_tokenId)});
+    //             switch(_exisingToken) {
+    //                 case(null) {
+    //                     #Err(#Unauthorized);
+    //                 };
+    //                 case(?_exisingToken) {
+    //                     // userTokens.put(#principal(from), _userTokenIndexes.delete(token_id));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // };
 
     // Returns the interfaces supported by this smart contract.
     public query func supportedInterfacesDip721(): async [Types.InterfaceId] {
