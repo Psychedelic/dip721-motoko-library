@@ -359,7 +359,6 @@ shared ({ caller = owner }) actor class DIP721() = this {
                                 } else {
                                     // There are no existing principals to remove;
                                     return #Err(#Other);
-                                    
                                 }
                             };
 
