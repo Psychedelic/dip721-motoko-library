@@ -183,19 +183,19 @@ public type User = {
 // // }
 // // --------------
 
-// public func into_token_index(token_identifier: TokenIdentifier): TokenIndex {
-//     assert(token_identifier.size() > 0);
-//         let chars = token_identifier.chars();
+public func intoTokenIdex(token_identifier: TokenIdentifier): TokenIndex {
+    assert(token_identifier.size() > 0);
+        let chars = token_identifier.chars();
 
-//         var num : Nat = 0;
-//         for (v in chars){
-//             let charToNum = Nat32.toNat(Char.toNat32(v)-48);
-//             assert(charToNum >= 0 and charToNum <= 9);
-//             num := num * 10 +  charToNum;          
-//         };
+        var num : Nat = 0;
+        for (v in chars){
+            let charToNum = Nat32.toNat(Char.toNat32(v)-48);
+            assert(charToNum >= 0 and charToNum <= 9);
+            num := num * 10 +  charToNum;          
+        };
 
-//         Nat32.fromNat(num);
-// };
+        Nat32.fromNat(num);
+};
 
 // public func into_token_identifier(token_index: TokenIndex): TokenIdentifier {
 //     Nat32.toText(token_index);

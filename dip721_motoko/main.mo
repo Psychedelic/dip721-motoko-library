@@ -3,6 +3,7 @@ import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Iter "mo:base/Iter";
 import Nat32 "mo:base/Nat32";
+import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
 import _userTokenEntries "mo:base/Blob";
@@ -29,18 +30,33 @@ actor {
         userTokenEntries := [];
     };
 
-//     // tokens: HashMap<TokenIndex, TokenMetadata>,
-//     // user_tokens: HashMap<User, Vec<TokenIndex>>,
+    //Count of all NFTs assigned to user.
+    public query func balanceOfDip721(user: Principal): async Nat64 {
+        let tokens = userTokens.get(#principal(user));
+        switch(tokens) {
+            case(null) {
+                0;
+            };
+            case(?tokens) {
+                let _tokens = tokens.size();
+                Nat64.fromNat(_tokens);
+            }
+        }
+    };
 
-//     //Count of all NFTs assigned to user.
-//     public query func balanceOfDip721(user: Principal): async Nat64 {
-//         0;
-//     };
-
-//     // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
-//     public query func ownerOfDip721(token_id: Nat64): async Types.OwnerResult {
-
-//     };
+    // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
+    public query func ownerOfDip721(tokenId: Nat64): async Types.OwnerResult {
+        let _token = Nat64.toNat(tokenId);
+        let token = tokens.get(Nat32.fromNat(_token));
+        switch(token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?token) {
+                #Ok(token.principal);
+            };
+        }
+    };
 
 //     // Safely transfers token_id token from user from to user to. 
 //     // If to is zero, then ApiError.ZeroAddress should be returned. 
