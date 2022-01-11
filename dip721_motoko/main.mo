@@ -14,6 +14,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     type TokenMetadata = Types.TokenMetadata;
     type User = Types.User;
     type TokenLevelMetadata = Types.TokenLevelMetadata;
+    type LogoResult = Types.LogoResult;
 
     private stable var isInitialized: Bool = false;
     private stable var tokenLevelMetadata: TokenLevelMetadata = {
@@ -21,6 +22,11 @@ shared ({ caller = owner }) actor class DIP721() = this {
         symbol = "";
         name = "";
         history = null;
+    };
+
+    private stable var logo: LogoResult = {
+        logo_type = "not set";
+        data = "not set";
     };
 
 
@@ -126,10 +132,25 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     // Returns the logo of the NFT contract.
     public query func logoDip721(): async Types.LogoResult {
-        {
-            logo_type = "Not implemented";
-            data = "Not implemented";
-        }
+        logo;
+    };
+
+    // Set the logo of the NFT contract, the contract must be initialized and 
+    // only the owner of the contract can set the image
+    
+    // "logo_type" refers to the mime-type, "data" is the base64 encoded image
+    public query({caller}) func setLogoDip721(logo_type: Text, data: Text) {
+        let owner = tokenLevelMetadata.owner;
+        switch(owner) {
+            case(null) {};
+            case(owner){
+                assert(isInitialized and caller == owner);
+                logo := {
+                    logo_type = logo_type;
+                    data = data;
+                };
+            };
+        };
     };
 
     // Returns the name of the NFT contract.
