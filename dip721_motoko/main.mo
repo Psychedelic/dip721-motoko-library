@@ -7,6 +7,8 @@ import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
 import _extendedMetaDataResult "mo:base/Blob";
+import Principal "mo:base/Principal";
+import AccountIdentifier "./AccountIdentifier";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
@@ -16,6 +18,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     type TokenLevelMetadata = Types.TokenLevelMetadata;
 
     private stable var isInitialized: Bool = false;
+    private stable var txId:Nat = 0;
     private stable var tokenLevelMetadata: TokenLevelMetadata = {
         owner = null;
         symbol = "";
@@ -27,21 +30,25 @@ shared ({ caller = owner }) actor class DIP721() = this {
     private stable var tokenEntries : [(TokenIndex, TokenMetadata)] = [];
     private stable var userTokenEntries : [(User, [TokenIndex])] = [];
     private stable var approvedEntries : [(TokenIndex, Principal)] = [];
-    private stable var operatorEntries : [(TokenIndex, Buffer.Buffer<Principal>)] = [];
+    private stable var operatorEntries : [(TokenIndex, [Principal])] = [];
 
     private var tokens = HashMap.fromIter<TokenIndex,TokenMetadata>(tokenEntries.vals(), 0, Nat32.equal, func(v) {v});
     private var userTokens = HashMap.fromIter<User, Buffer.Buffer<TokenIndex>>(Utils.mapUserTokensForHashmap(userTokenEntries).vals(), 0, Utils.compareUser, Utils.hashUser);
     private var approved = HashMap.fromIter<TokenIndex, Principal>(approvedEntries.vals(), 0, Nat32.equal, func(v) {v});
-    private var operators = HashMap.fromIter<TokenIndex, Buffer.Buffer<Principal>>(operatorEntries.vals(), 0, Nat32.equal, func(v) {v});
+    private var operators = HashMap.fromIter<TokenIndex, Buffer.Buffer<Principal>>(Utils.mapOperatorsForHashmap(operatorEntries).vals(), 0, Nat32.equal, func(v) {v});
 
     system func preupgrade() {
         tokenEntries := Iter.toArray(tokens.entries());
         userTokenEntries := Utils.mapUserTokenForUpgrade(userTokens);
+        approvedEntries := Iter.toArray(approved.entries());
+        operatorEntries := Utils.mapOperatorsForUpgrade(operators);
     };
 
     system func postupgrade() {
         tokenEntries := [];
         userTokenEntries := [];
+        approvedEntries := [];
+        operatorEntries := [];
     };
 
     public shared({caller}) func init(symbol: Text, name: Text, history: Principal) {
@@ -96,6 +103,25 @@ shared ({ caller = owner }) actor class DIP721() = this {
         }
     };
 
+    private func _setOwnerOfDip721(token_id: Nat64, owner: Principal) {
+        let token = tokens.get(Utils.toTokenIndex(token_id));
+        switch(token) {
+            case(null) {
+                
+            };
+            case(?token) {
+                let _token = {
+                    account_identifier = AccountIdentifier.fromPrincipal(owner,null);
+                    metadata = token.metadata;
+                    token_identifier = token.token_identifier;
+                    principal = owner;
+                    metadata_desc = token.metadata_desc;
+                };
+                tokens.put(Utils.toTokenIndex(token_id),_token);
+            };
+        }
+    };
+
 //     // Safely transfers token_id token from user from to user to. 
 //     // If to is zero, then ApiError.ZeroAddress should be returned. 
 //     // If the caller is neither the owner, nor an approved operator, 
@@ -103,49 +129,46 @@ shared ({ caller = owner }) actor class DIP721() = this {
 //     // then ApiError.Unauthorized should be returned. If token_id is not valid, 
 //     // then ApiError.InvalidTokenId is returned.
     public shared({ caller }) func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
-        if(to == 0){return #Err(#ZeroAddress);};
+        if(Utils.isAnonymous(to)){return #Err(#ZeroAddress);};
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
         switch(isOwner){
             case(#Ok(value)){
                 if(isApproved or isOperator){
-
+                    _setOwnerOfDip721(token_id, caller);
+                    txId := txId+1;
+                    #Ok(txId);
                 }else {
                     return #Err(#Unauthorized);
                 };
             };
             case(#Err(value)){
-                reutrn value;
+                return #Err(value);
             };
         };
     };
 
     //Identical to safeTransferFromDip721 except that this function doesn't check whether the to is a zero address or not.
     public shared({ caller }) func transferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
-        assert(caller != to);
+        let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
+        let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
+        let isOwner = _ownerOfDip721(token_id);
+        switch(isOwner){
 
-        if(caller != from) {
-            return #Err(#Unauthorized);
-        };
-
-        let _userTokenIndexes = userTokens.get(#principal(from));
-        switch(_userTokenIndexes) {
-            case(null) {
-                #Err(#Unauthorized);
+            case(#Ok(value)){
+                if(isApproved or isOperator){
+                    _setOwnerOfDip721(token_id, caller);
+                    txId := txId+1;
+                    #Ok(txId);
+                }else {
+                    return #Err(#Unauthorized);
+                };
             };
-            case(?_userTokenIndexes) {
-                let _exisingToken = Array.find<TokenIndex>(_userTokenIndexes.toArray(), func (i) {i == Utils.toTokenIndex(token_id)});
-                switch(_exisingToken) {
-                    case(null) {
-                        #Err(#Unauthorized);
-                    };
-                    case(?_exisingToken) {
-                        //userTokens.put(#principal(from), _userTokenIndexes.delete(token_id));
-                    }
-                }
-            }
-        }
+            case(#Err(value)){
+                return #Err(value);
+            };
+        };
     };
 
     private func _isApproved(tokenIndex:TokenIndex, user:Principal): Bool {
