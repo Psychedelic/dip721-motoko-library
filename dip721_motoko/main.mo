@@ -15,11 +15,11 @@ actor {
     private stable var userTokenEntries : [(User, [TokenIndex])] = [];
 
     private var tokens = HashMap.fromIter<TokenIndex,TokenMetadata>(tokenEntries.vals(), 0, Nat32.equal, func(v) {v});
-    private var userTokens = HashMap.fromIter<User, [TokenIndex]>(userTokenEntries.vals(), 0, Utils.compareUser, Utils.hashUser);
+    private var userTokens = HashMap.fromIter<User, Buffer.Buffer<TokenIndex>>(Utils.tokenIndexToBuffer(userTokenEntries).vals(), 0, Utils.compareUser, Utils.hashUser);
 
     system func preupgrade() {
         tokenEntries := Iter.toArray(tokens.entries());
-        userTokenEntries := Iter.toArray(userTokens.entries());
+        // userTokenEntries := userTokens.toArray().vals();
     };
 
     system func postupgrade() {
