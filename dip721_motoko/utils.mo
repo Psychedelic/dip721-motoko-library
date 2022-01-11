@@ -91,4 +91,16 @@ module {
         let _value = Nat32.toNat(value);
         Nat64.fromNat(_value);
     };
+
+    public func removePrincipalFromBuffer(principal: Principal, principals: Buffer.Buffer<Principal>): Buffer.Buffer<Principal> {
+        let _principals = principals.toArray();
+        let _buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
+
+        for(p in _principals.vals()) {
+            if(p != principal) {
+                _buffer.add(p);
+            };
+        };
+        _buffer;
+    };
 }

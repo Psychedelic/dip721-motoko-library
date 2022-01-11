@@ -104,7 +104,10 @@ shared ({ caller = owner }) actor class DIP721() = this {
 //     // then ApiError.Unauthorized should be returned. If token_id is not valid, 
 //     // then ApiError.InvalidTokenId is returned.
     public shared({ caller }) func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
-        if(Utils.isAnonymous(to)){return #Err(#ZeroAddress);};
+        if(Utils.isAnonymous(to)){
+            return #Err(#ZeroAddress);
+        };
+
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
@@ -298,9 +301,9 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Returns ApiError.Unauthorized in case the caller neither owns 
     // token_id nor he is an operator approved by a call to the setApprovalForAll function.
     public query func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
-        // if(Principal.isAnonymous(user)){
-        //     return #Err(#ZeroAddress);
-        // };
+        if(Utils.isAnonymous(user)){
+            return #Err(#ZeroAddress);
+        };
 
         let tokenId = Utils.toTokenIndex(token_id);
         let token = tokens.get(tokenId);
@@ -334,9 +337,9 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Approvals granted by the approveDip721 function are independent from the approvals 
     // granted by setApprovalForAll function. The zero address indicates there are no approved operators.
     public shared({caller}) func setApprovalForAllDip721(operator: Principal, isApproved: Bool): async Types.TxReceipt {
-        // if(operator == 0){
-        //     return #Err(#ZeroAddress);
-        // };
+         if(Utils.isAnonymous(operator)){
+            return #Err(#ZeroAddress);
+        };
 
         let _userTokens = userTokens.get(#principal(caller));
         switch(_userTokens) {
@@ -344,33 +347,46 @@ shared ({ caller = owner }) actor class DIP721() = this {
                 #Err(#Other);
             };
             case(?_userTokens) {
-                if(isApproved == true) {
                     for(tokenId in _userTokens.vals()) {
                         let _exisingPrincipals = operators.get(tokenId);
+                        var _buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
+
                         switch(_exisingPrincipals) {
                             case(null) {
-                                let _buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
-                                _buffer.add(operator);
-                                operators.put(tokenId, _buffer);
+                                if(isApproved == true) {
+                                    _buffer.add(operator);
+                                    operators.put(tokenId, _buffer);
+                                } else {
+                                    // There are no existing principals to remove;
+                                    return #Err(#Other);
+                                    
+                                }
                             };
+
                             case(?_exisingPrincipals) {
-                                let _buffer = _exisingPrincipals;
+                                _buffer := _exisingPrincipals;
                                 _buffer.add(operator);
-                                operators.put(tokenId, _buffer);
+                                if(isApproved == true) {
+                                    operators.put(tokenId, _buffer);
+                                } else {
+                                    let _existingOperator = Array.find<Principal>(_exisingPrincipals.toArray(), func (p) { p == operator});
+                                    switch(_existingOperator) {
+                                        case(null) {
+                                            // There are no existing principals to remove;
+                                            return #Err(#Other);
+                                        };
+                                        case(?_existingOperator) {
+                                            operators.put(tokenId, Utils.removePrincipalFromBuffer(operator, _buffer));
+                                        }
+                                    }
+                                }
                             };
                         }
                     };
-                    // ADD REMOVE
-                };
-                // TODO FIX THIS;
                 #Ok(0);
-            }
-        }
+            };
+        };
     };
-
-    // private func filterPrincipalFromArray(principal: Principal, principals: [Principal]): [Principal] {
-    //     Array.filter(principal, func(p) {p != principal});
-    // };
 
 //     // Returns the approved user for token_id. Returns ApiError.InvalidTokenId if the token_id is invalid.
 //     public query func getApprovedDip721(token_id: Nat64): async Types.TxReceipt {
