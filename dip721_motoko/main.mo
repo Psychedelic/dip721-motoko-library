@@ -1,7 +1,35 @@
-import Types "./Types";
 import Buffer "mo:base/Buffer";
+import HashMap "mo:base/HashMap";
+import Iter "mo:base/Iter";
+import Nat32 "mo:base/Nat32";
+import Types "./Types";
+import Utils "./Utils";
 
 actor {
+
+    type TokenIndex = Types.TokenIndex;
+    type TokenMetadata = Types.TokenMetadata;
+    type User = Types.User;
+
+    private stable var tokenEntries : [(TokenIndex, TokenMetadata)] = [];
+    private stable var userTokenEntries : [(User, [TokenIndex])] = [];
+
+    private var tokens = HashMap.fromIter<TokenIndex,TokenMetadata>(tokenEntries.vals(), 0, Nat32.equal, func(v) {v});
+    private var userTokens = HashMap.fromIter<User, [TokenIndex]>(userTokenEntries.vals(), 0, Utils.compareUser, Utils.hashUser);
+
+    system func preupgrade() {
+        tokenEntries := Iter.toArray(tokens.entries());
+        userTokenEntries := Iter.toArray(userTokens.entries());
+    };
+
+    system func postupgrade() {
+        tokenEntries := [];
+        userTokenEntries := [];
+    };
+
+    // tokens: HashMap<TokenIndex, TokenMetadata>,
+    // user_tokens: HashMap<User, Vec<TokenIndex>>,
+
     //Count of all NFTs assigned to user.
     public query func balanceOfDip721(user: Principal): async Nat64 {
         0;
