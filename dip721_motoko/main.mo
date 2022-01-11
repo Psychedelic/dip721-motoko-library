@@ -278,17 +278,41 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
 //     };
 
-//     // Change or reaffirm the approved address for an NFT. 
-//     // The zero address indicates there is no approved address. 
-//     // Only one user can be approved at a time to manage token_id. 
-//     // Approvals given by the approveDip721 function are independent from 
-//     // approvals given by the setApprovalForAllDip721. 
-//     // Returns ApiError.InvalidTokenId, if the token_id is not valid. 
-//     // Returns ApiError.Unauthorized in case the caller neither owns 
-//     // token_id nor he is an operator approved by a call to the setApprovalForAll function.
-//     public query func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
+    // Change or reaffirm the approved address for an NFT. 
+    // The zero address indicates there is no approved address. 
+    // Only one user can be approved at a time to manage token_id. 
+    // Approvals given by the approveDip721 function are independent from 
+    // approvals given by the setApprovalForAllDip721. 
+    // Returns ApiError.InvalidTokenId, if the token_id is not valid. 
+    // Returns ApiError.Unauthorized in case the caller neither owns 
+    // token_id nor he is an operator approved by a call to the setApprovalForAll function.
+    public query func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
+        let tokenId = Utils.toTokenIndex(token_id);
+        let token = tokens.get(tokenId);
 
-//     };
+        switch(token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?token) {
+                let approvedToken = approved.get(Utils.toTokenIndex(token_id));
+                switch(approvedToken) {
+                    case(null) {
+                        if(token.principal != user) {
+                            return #Err(#Unauthorized);
+                        };
+
+                        approved.put(tokenId, user);
+                    };
+                    case(approvedToken) {
+                        #Err(#Unauthorized);
+                    }
+                }
+
+            }
+        }
+
+    };
 
 //     // Enable or disable an operator to manage all of the tokens for the caller of this function. 
 //     // Multiple operators can be given permission at the same time. w
