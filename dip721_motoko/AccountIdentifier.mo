@@ -28,8 +28,11 @@ module {
   };
   public func fromBytes(data : [Nat8], sa : ?SubAccount) : AccountIdentifier {
     var _sa : [Nat8] = SUBACCOUNT_ZERO;
-    if (Option.isSome(sa)) {
-      _sa := Option.unwrap(sa);
+    switch(sa) {
+      case(null) {};
+      case(?sa) {
+        _sa := sa;
+      }
     };
     var hash : [Nat8] = SHA224.sha224(Array.append(Array.append(ads, data), _sa));
     var crc : [Nat8] = CRC32.crc32(hash);
