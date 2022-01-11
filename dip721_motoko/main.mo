@@ -91,37 +91,6 @@ shared ({ caller = owner }) actor class DIP721() = this {
         }
     };
 
-    private func _ownerOfDip721(token_id: Nat64): Types.OwnerResult {
-        let token = tokens.get(Utils.toTokenIndex(token_id));
-        switch(token) {
-            case(null) {
-                #Err(#InvalidTokenId);
-            };
-            case(?token) {
-                #Ok(token.principal);
-            };
-        }
-    };
-
-    private func _setOwnerOfDip721(token_id: Nat64, owner: Principal) {
-        let token = tokens.get(Utils.toTokenIndex(token_id));
-        switch(token) {
-            case(null) {
-                
-            };
-            case(?token) {
-                let _token = {
-                    account_identifier = AccountIdentifier.fromPrincipal(owner,null);
-                    metadata = token.metadata;
-                    token_identifier = token.token_identifier;
-                    principal = owner;
-                    metadata_desc = token.metadata_desc;
-                };
-                tokens.put(Utils.toTokenIndex(token_id),_token);
-            };
-        }
-    };
-
 //     // Safely transfers token_id token from user from to user to. 
 //     // If to is zero, then ApiError.ZeroAddress should be returned. 
 //     // If the caller is neither the owner, nor an approved operator, 
@@ -169,33 +138,6 @@ shared ({ caller = owner }) actor class DIP721() = this {
                 return #Err(value);
             };
         };
-    };
-
-    private func _isApproved(tokenIndex:TokenIndex, user:Principal): Bool {
-        let exist = approved.get(tokenIndex);
-        switch(exist) {
-            case(?exist){
-                return true;
-            };
-            case(null) {
-                return false;
-            };
-        };
-    };
-
-    private func _isOperator(tokenIndex:TokenIndex, user:Principal): Bool {
-        let exist = operators.get(tokenIndex);
-        switch(exist) {
-            case(?exist){
-                for(op in exist.vals()){
-                    if(op == user) {return true}
-                };
-            };
-            case(null) {
-                return false;
-            };
-        };
-        return false;
     };
 
     // Returns the interfaces supported by this smart contract.
@@ -268,17 +210,63 @@ shared ({ caller = owner }) actor class DIP721() = this {
         }
     };
 
-//     // Same as safeTransferFromDip721, but to is treated as a smart contract that implements the Notification interface. 
-//     // Upon successful transfer onDIP721Received is called with data.
-//     public func safeTransferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64, data: [Nat8]): async Types.TxReceipt {
+    private func _isApproved(tokenIndex:TokenIndex, user:Principal): Bool {
+        let exist = approved.get(tokenIndex);
+        switch(exist) {
+            case(?exist){
+                return true;
+            };
+            case(null) {
+                return false;
+            };
+        };
+    };
 
-//     };
+    private func _isOperator(tokenIndex:TokenIndex, user:Principal): Bool {
+        let exist = operators.get(tokenIndex);
+        switch(exist) {
+            case(?exist){
+                for(op in exist.vals()){
+                    if(op == user) {return true}
+                };
+            };
+            case(null) {
+                return false;
+            };
+        };
+        return false;
+    };
 
-//     // Same as transferFromDip721, but to is treated as a smart contract that implements the Notification interface. 
-//     // Upon successful transfer onDIP721Received is called with data.
-//     public func transferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64,  data: [Nat8]): async Types.TxReceipt {
+    private func _ownerOfDip721(token_id: Nat64): Types.OwnerResult {
+        let token = tokens.get(Utils.toTokenIndex(token_id));
+        switch(token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?token) {
+                #Ok(token.principal);
+            };
+        }
+    };
 
-//     };
+    private func _setOwnerOfDip721(token_id: Nat64, owner: Principal) {
+        let token = tokens.get(Utils.toTokenIndex(token_id));
+        switch(token) {
+            case(null) {
+                
+            };
+            case(?token) {
+                let _token = {
+                    account_identifier = AccountIdentifier.fromPrincipal(owner,null);
+                    metadata = token.metadata;
+                    token_identifier = token.token_identifier;
+                    principal = owner;
+                    metadata_desc = token.metadata_desc;
+                };
+                tokens.put(Utils.toTokenIndex(token_id),_token);
+            };
+        }
+    };
 
 //     // Change or reaffirm the approved address for an NFT. 
 //     // The zero address indicates there is no approved address. 
