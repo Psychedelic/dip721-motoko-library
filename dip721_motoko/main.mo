@@ -6,10 +6,10 @@ import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Types "./types";
 import Utils "./utils";
-import notifyService "./notifyService";
+import notifyService "./notify_service";
 import _extendedMetaDataResult "mo:base/Blob";
 import Principal "mo:base/Principal";
-import AccountIdentifier "./AccountIdentifier";
+import AccountIdentifier "./account_identifier";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
