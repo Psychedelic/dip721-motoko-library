@@ -8,17 +8,19 @@ import Types "./types";
 import _userTokens "mo:base/Blob";
 import Nat64 "mo:base/Nat64";
 import Nat32 "mo:base/Nat32";
+import Char "mo:base/Char";
 import Prim "mo:⛔";
 
 module {
 
     type User = Types.User;
     type TokenIndex = Types.TokenIndex;
+    type TokenIdentifier = Types.TokenIdentifier;
 
-    private let anonymousPrincipal : Blob = "\04";
+    public let anonymousPrincipal : Text = "\04";
 
     public func isAnonymous(p : Principal) : Bool {
-        return Prim.blobOfPrincipal p == anonymousPrincipal;
+        return Prim.blobOfPrincipal p == Text.encodeUtf8(anonymousPrincipal);
     };
     
     public func hashUser(user: User): Hash.Hash {
@@ -97,6 +99,24 @@ module {
         let _value = Nat32.toNat(value);
         Nat64.fromNat(_value);
     };
+
+    public func tokenIdentifierToIndex(token_identifier: TokenIdentifier): TokenIndex {
+    assert(token_identifier.size() > 0);
+        let chars = token_identifier.chars();
+
+        var num : Nat = 0;
+        for (v in chars){
+            let charToNum = Nat32.toNat(Char.toNat32(v)-48);
+            assert(charToNum >= 0 and charToNum <= 9);
+            num := num * 10 +  charToNum;          
+        };
+
+        Nat32.fromNat(num);
+};
+
+public func tokenIndexToTokenIdentifier(token_index: TokenIndex): TokenIdentifier {
+    Nat32.toText(token_index);
+};
 
     public func removePrincipalFromBuffer(principal: Principal, principals: Buffer.Buffer<Principal>): Buffer.Buffer<Principal> {
         let _principals = principals.toArray();
