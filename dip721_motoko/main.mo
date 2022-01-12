@@ -1,15 +1,16 @@
+import AccountIdentifier "./resources/account_identifier";
 import Array "mo:base/Array";
+import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Iter "mo:base/Iter";
 import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
+import Principal "mo:base/Principal";
+import Text "mo:base/Text";
 import Types "./types";
 import Utils "./utils";
 import notifyService "./notify_service";
-import _extendedMetaDataResult "mo:base/Blob";
-import Principal "mo:base/Principal";
-import AccountIdentifier "./resources/account_identifier";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
@@ -21,6 +22,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     private stable var isInitialized: Bool = false;
     private stable var txId:Nat = 0;
+    private stable var tokenIndex: TokenIndex = 0;
+
     private stable var tokenLevelMetadata: TokenLevelMetadata = {
         owner = null;
         symbol = "";
@@ -218,11 +221,11 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // "logo_type" refers to the mime-type, "data" is the base64 encoded image
     public query({caller}) func setLogoDip721(logo_type: Text, data: Text): async () {
         let owner = tokenLevelMetadata.owner;
-        
+
         switch(owner) {
             case(null) {};
             case(?owner){
-                assert(isInitialized and caller == owner);
+            assert(isInitialized and caller == owner);
                 logo := {
                     logo_type = logo_type;
                     data = data;
@@ -264,7 +267,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     };
 
     // Returns all the metadata for the coins user owns.
-    public func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
+    public query func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
         let _userTokens = userTokens.get(#principal(user));
         
         switch(_userTokens) {
@@ -362,7 +365,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Returns ApiError.InvalidTokenId, if the token_id is not valid. 
     // Returns ApiError.Unauthorized in case the caller neither owns 
     // token_id nor he is an operator approved by a call to the setApprovalForAll function.
-    public query func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
+    public func approveDip721(user: Principal, token_id: Nat64): async Types.TxReceipt {
         if(Utils.isAnonymous(user)){
             return #Err(#ZeroAddress);
         };
@@ -456,30 +459,140 @@ shared ({ caller = owner }) actor class DIP721() = this {
         };
     };
 
-//     // Returns the approved user for token_id. Returns ApiError.InvalidTokenId if the token_id is invalid.
-//     public query func getApprovedDip721(token_id: Nat64): async Types.TxReceipt {
+    // Returns the approved user for token_id. Returns zero address if the token_id is invalid.
+    public query func getApprovedDip721(token_id: Nat64): async Principal {
+        let _approved = approved.get(Utils.toTokenIndex(token_id));
 
-//     };
+        switch(_approved) {
+            case(null) {
+                Principal.fromText(Utils.anonymousPrincipal);
+            };
+            case(?_approved) {
+                _approved;
+            };
+        };
+    };
 
-//     // Returns true if the given operator is an approved operator for all the tokens owned by the caller, returns false otherwise.w
-//     public query func isApprovedForAllDip721(operator: Principal): async Bool {
-
-//     };
-
-//     // Mint an NFT for principal to. 
-//     // The parameter blobContent is non zero, if the NFT contract embeds the NFTs in the smart contract. 
-//     // Implementations are encouraged to only allow minting by the owner of the smart contract. 
-//     // Returns ApiError.Unauthorized, if the caller doesn't have the permission to mint the NFT.
-//     public func mintDip721(to: Principal, metadata: Types.Metadata, blobContent: Blob): async Types.MintReceipt {
+    // Returns true if the given operator is an approved operator for all the tokens owned by the caller, returns false otherwise
+    public query({caller}) func isApprovedForAllDip721(operator: Principal): async Bool {
+        let _userTokens = userTokens.get(#principal(caller));
+        var _tokensWithOperator = 0;
         
-//     };
+        switch(_userTokens) {
+            case(null) {
+                return false;
+            };
+            case(?_userTokens) {
+        
+                for (tokenId in _userTokens.vals()) {
+                    let _operators = operators.get(tokenId);
+        
+                    switch(_operators) {
+                        case(null) {};
+                        case(?_operators) {
+                            let operatorsArray = Iter.toArray(_operators.vals());
+                            let _operator = Array.find<Principal>(operatorsArray, func (o) {o == operator});
+        
+                            switch(_operator) {
+                                case(null) {};
+                                case(?_operator) {
+                                    _tokensWithOperator := _tokensWithOperator + 1;
+                                }
+                            }
+                        };
+                    }
+                };
+                _tokensWithOperator == _userTokens.size();
+            };
+        };
+    };
 
-//     // Burn an NFT identified by token_id. Implementations are encouraged to only allow burning by the owner of the token_id. 
-//     // Returns ApiError.Unauthorized, if the caller doesn't have the permission to burn the NFT. Returns ApiError.InvalidTokenId, 
-//     // if the provided token_id doesn't exist.
-//     public func burnDip721(token_id: Nat64): async Types.TxReceipt {
+    // Mint an NFT for principal to. 
+    // The parameter blobContent is non zero, if the NFT contract embeds the NFTs in the smart contract. 
+    // Implementations are encouraged to only allow minting by the owner of the smart contract. 
+    // Returns ApiError.Unauthorized, if the caller doesn't have the permission to mint the NFT.
+    public shared({caller}) func mintDip721(to: Principal, metadata: Types.Metadata, blobContent: Blob): async Types.MintReceipt {
+        if(?caller == tokenLevelMetadata.owner) {
+            return #Err(#Unauthorized);
+        };
 
-//     };
+        if(Utils.isAnonymous(to)){
+            return #Err(#ZeroAddress);
+        };
+
+        // Check this -> metadata_desc
+        let tokenMetaData: Types.TokenMetadata = {
+            account_identifier = AccountIdentifier.fromPrincipal(to,null);
+            metadata = metadata;
+            token_identifier = Utils.tokenIndexToTokenIdentifier(tokenIndex);
+            principal = to;
+            metadata_desc = [{
+                purpose = #Preview;
+                key_val_data = [];
+                data = blobContent;
+            }];
+        };
+
+        let _existingTokens = userTokens.get(#principal(to));
+        var _tokenBuffer: Buffer.Buffer<TokenIndex> = Buffer.Buffer(0);
+        switch(_existingTokens) {
+            case(null) {
+                _tokenBuffer.add(tokenIndex);
+            };
+            case(?_existingTokens) {
+                _tokenBuffer := _existingTokens;
+                _tokenBuffer.add(tokenIndex);
+            };
+        };
+            tokens.put(tokenIndex, tokenMetaData);
+            userTokens.put(#principal(to), _tokenBuffer);
+
+        let mintReceipt: Types.MintReceiptPart = {
+            token_id = Utils.toTokenId(tokenIndex);
+            id = txId;
+        };
+        txId := txId + 1;
+        tokenIndex := tokenIndex + 1;
+
+        #Ok(mintReceipt);
+
+    };
+
+    // Burn an NFT identified by token_id. Implementations are encouraged to only allow burning by the owner of the token_id. 
+    // Returns ApiError.Unauthorized, if the caller doesn't have the permission to burn the NFT. Returns ApiError.InvalidTokenId, 
+    // if the provided token_id doesn't exist.
+    public shared({caller}) func burnDip721(token_id: Nat64): async Types.TxReceipt {
+        let _token = tokens.get(Utils.toTokenIndex(token_id));
+
+        switch(_token) {
+            case(null) {
+                #Err(#InvalidTokenId);
+            };
+            case(?_token) {
+                let _userTokens = userTokens.get(#principal(caller));
+                
+                switch(_userTokens) {
+                    case(null) {
+                        #Err(#Unauthorized);
+                    };
+                    case(?_userTokens) {
+                        let _userTokensArray = _userTokens.toArray();
+                        let _fetchedToken = Array.find<TokenIndex>(_userTokensArray, func(t) {t == Utils.tokenIdentifierToIndex(_token.token_identifier) });
+                        
+                        switch(_fetchedToken) {
+                            case(null) {
+                                #Err(#Unauthorized);
+                            };
+                            case(?_fetchedToken) {
+                                #Ok(Nat32.toNat(_fetchedToken));
+                            };
+                        };
+                    };
+                };
+            };
+        }
+
+    };
 
 //     // transferFromNotifyDip721 and safeTransferFromNotifyDip721 functions can 
 //     // - upon successfull NFT transfer 
