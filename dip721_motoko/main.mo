@@ -9,7 +9,7 @@ import Utils "./utils";
 import notifyService "./notify_service";
 import _extendedMetaDataResult "mo:base/Blob";
 import Principal "mo:base/Principal";
-import AccountIdentifier "./account_identifier";
+import AccountIdentifier "./resources/account_identifier";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
@@ -32,7 +32,6 @@ shared ({ caller = owner }) actor class DIP721() = this {
         logo_type = "not set";
         data = "not set";
     };
-
 
     private stable var tokenEntries : [(TokenIndex, TokenMetadata)] = [];
     private stable var userTokenEntries : [(User, [TokenIndex])] = [];
@@ -74,6 +73,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     //Count of all NFTs assigned to user.
     public query func balanceOfDip721(user: Principal): async Nat64 {
         let tokens = userTokens.get(#principal(user));
+        
         switch(tokens) {
             case(null) {
                 0;
@@ -88,6 +88,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Returns the owner of the NFT associated with token_id. Returns ApiError.InvalidTokenId, if the token id is invalid.
     public query func ownerOfDip721(token_id: Nat64): async Types.OwnerResult {
         let token = tokens.get(Utils.toTokenIndex(token_id));
+        
         switch(token) {
             case(null) {
                 #Err(#InvalidTokenId);
@@ -112,6 +113,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
+
         switch(isOwner){
             case(#Ok(value)){
                 if(isApproved or isOperator){
@@ -129,10 +131,14 @@ shared ({ caller = owner }) actor class DIP721() = this {
     };
 
     public shared({ caller }) func safeTransferFromNotifyDip721(from: Principal, to: Principal, token_id: Nat64, data: [Nat8]): async Types.TxReceipt {
-        if(Utils.isAnonymous(to)){return #Err(#ZeroAddress);};
+        if(Utils.isAnonymous(to)){
+            return #Err(#ZeroAddress);
+        };
+
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
+        
         switch(isOwner){
             case(#Ok(value)){
                 if(isApproved or isOperator){
@@ -156,8 +162,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
+        
         switch(isOwner){
-
             case(#Ok(value)){
                 if(isApproved or isOperator){
                     _setOwnerOfDip721(token_id, caller);
@@ -177,8 +183,8 @@ shared ({ caller = owner }) actor class DIP721() = this {
         let isApproved = _isApproved(Utils.toTokenIndex(token_id), caller);
         let isOperator = _isOperator(Utils.toTokenIndex(token_id), caller);
         let isOwner = _ownerOfDip721(token_id);
+        
         switch(isOwner){
-
             case(#Ok(value)){
                 if(isApproved or isOperator){
                     _setOwnerOfDip721(token_id, caller);
@@ -212,6 +218,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // "logo_type" refers to the mime-type, "data" is the base64 encoded image
     public query({caller}) func setLogoDip721(logo_type: Text, data: Text): async () {
         let owner = tokenLevelMetadata.owner;
+        
         switch(owner) {
             case(null) {};
             case(?owner){
@@ -245,6 +252,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Returns the metadata for token_id. Returns ApiError.InvalidTokenId, if the token_id is invalid.
     public query func getMetadataDip721(token_id: Nat64): async Types.MetadataResult {
         let token = tokens.get(Utils.toTokenIndex(token_id));
+        
         switch(token) {
             case(null) {
                 #Err(#InvalidTokenId);
@@ -258,14 +266,17 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Returns all the metadata for the coins user owns.
     public func getMetadataForUserDip721(user: Principal): async [Types.ExtendedMetadataResult] {
         let _userTokens = userTokens.get(#principal(user));
+        
         switch(_userTokens) {
             case(null) {
                 [];
             };
             case(?_userTokens) {
                 let _extendedMetaDataResult = Buffer.Buffer<Types.ExtendedMetadataResult>(0);
+                
                 for(tokenId in _userTokens.vals()) {
                     let _token = tokens.get(tokenId);
+                    
                     switch(_token) {
                         case(null) {};
                         case(?_token) {
@@ -276,6 +287,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
                             };
                         };
                     };
+
                 _extendedMetaDataResult.toArray();
             };
         }
@@ -283,6 +295,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     private func _isApproved(tokenIndex:TokenIndex, user:Principal): Bool {
         let exist = approved.get(tokenIndex);
+        
         switch(exist) {
             case(?exist){
                 return true;
@@ -295,6 +308,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     private func _isOperator(tokenIndex:TokenIndex, user:Principal): Bool {
         let exist = operators.get(tokenIndex);
+        
         switch(exist) {
             case(?exist){
                 for(op in exist.vals()){
@@ -305,11 +319,13 @@ shared ({ caller = owner }) actor class DIP721() = this {
                 return false;
             };
         };
+
         return false;
     };
 
     private func _ownerOfDip721(token_id: Nat64): Types.OwnerResult {
         let token = tokens.get(Utils.toTokenIndex(token_id));
+        
         switch(token) {
             case(null) {
                 #Err(#InvalidTokenId);
@@ -322,10 +338,9 @@ shared ({ caller = owner }) actor class DIP721() = this {
 
     private func _setOwnerOfDip721(token_id: Nat64, owner: Principal) {
         let token = tokens.get(Utils.toTokenIndex(token_id));
+        
         switch(token) {
-            case(null) {
-                
-            };
+            case(null) {};
             case(?token) {
                 let _token = {
                     account_identifier = AccountIdentifier.fromPrincipal(owner,null);
@@ -361,6 +376,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
             };
             case(?token) {
                 let approvedToken = approved.get(Utils.toTokenIndex(token_id));
+                
                 switch(approvedToken) {
                     case(null) {
                         if(token.principal != user) {
@@ -384,16 +400,18 @@ shared ({ caller = owner }) actor class DIP721() = this {
     // Approvals granted by the approveDip721 function are independent from the approvals 
     // granted by setApprovalForAll function. The zero address indicates there are no approved operators.
     public shared({caller}) func setApprovalForAllDip721(operator: Principal, isApproved: Bool): async Types.TxReceipt {
-         if(Utils.isAnonymous(operator)){
+        if(Utils.isAnonymous(operator)){
             return #Err(#ZeroAddress);
         };
 
         let _userTokens = userTokens.get(#principal(caller));
+        
         switch(_userTokens) {
             case(null) {
                 #Err(#Other);
             };
             case(?_userTokens) {
+                    
                     for(tokenId in _userTokens.vals()) {
                         let _exisingPrincipals = operators.get(tokenId);
                         var _buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
@@ -432,6 +450,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
                             };
                         }
                     };
+                    
                 #Ok(txId);
             };
         };
