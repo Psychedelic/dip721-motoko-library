@@ -1,4 +1,3 @@
-import AccountIdentifier "./resources/account_identifier";
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
@@ -11,6 +10,7 @@ import Text "mo:base/Text";
 import Types "./types";
 import Utils "./utils";
 import notifyService "./notify_service";
+import AccountIdentifier "./resources/account_identifier";
 
 shared ({ caller = owner }) actor class DIP721() = this {
 
@@ -102,12 +102,12 @@ shared ({ caller = owner }) actor class DIP721() = this {
         }
     };
 
-//     // Safely transfers token_id token from user from to user to. 
-//     // If to is zero, then ApiError.ZeroAddress should be returned. 
-//     // If the caller is neither the owner, nor an approved operator, 
-//     // nor someone approved with the approveDip721 function, 
-//     // then ApiError.Unauthorized should be returned. If token_id is not valid, 
-//     // then ApiError.InvalidTokenId is returned.
+    // Safely transfers token_id token from user from to user to. 
+    // If to is zero, then ApiError.ZeroAddress should be returned. 
+    // If the caller is neither the owner, nor an approved operator, 
+    // nor someone approved with the approveDip721 function, 
+    // then ApiError.Unauthorized should be returned. If token_id is not valid, 
+    // then ApiError.InvalidTokenId is returned.
     public shared({ caller }) func safeTransferFromDip721(from: Principal, to: Principal, token_id: Nat64): async Types.TxReceipt {
         if(Utils.isAnonymous(to)){
             return #Err(#ZeroAddress);
@@ -390,7 +390,7 @@ shared ({ caller = owner }) actor class DIP721() = this {
                         txId := txId + 1;
                         #Ok(txId);
                     };
-                    case(approvedToken) {
+                    case(?approvedToken) {
                         #Err(#Unauthorized);
                     };
                 };
