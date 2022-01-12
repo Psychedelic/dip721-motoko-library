@@ -7,7 +7,6 @@ import Iter "mo:base/Iter";
 import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
-import Option "mo:base/Option";
 
 module {
 

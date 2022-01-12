@@ -4,9 +4,9 @@ import Principal "mo:base/Principal";
 import Blob "mo:base/Blob";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
-import SHA224 "./SHA224";
-import CRC32 "./CRC32";
-import Hex "./Hex";
+import SHA224 "./sha224";
+import CRC32 "./crc32";
+import Hex "./hex";
 
 module {
   public type AccountIdentifier = Text;

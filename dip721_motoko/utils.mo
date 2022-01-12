@@ -41,9 +41,11 @@ module {
 
         for ((user, indexes) in userTokens.vals()) {
             let buffer: Buffer.Buffer<TokenIndex> = Buffer.Buffer(0);
+            
             for (index in indexes.vals()) {
                 buffer.add(index);
             };
+            
             _userTokens.add(user, buffer);
         };
         
@@ -55,9 +57,11 @@ module {
 
         for ((token, indexes) in _Operators.vals()) {
             let buffer: Buffer.Buffer<Principal> = Buffer.Buffer(0);
+            
             for (index in indexes.vals()) {
                 buffer.add(index);
             };
+
             _Operators.add(token, buffer);
         };
         
@@ -66,6 +70,7 @@ module {
     
     public func mapUserTokenForUpgrade(userTokens: HashMap.HashMap<User, Buffer.Buffer<TokenIndex>>): [(User, [TokenIndex])] {
         let _userTokenEntries: Buffer.Buffer<(User, [TokenIndex])> = Buffer.Buffer(0);
+        
         for((user, indexes) in userTokens.entries()) {
             _userTokenEntries.add(user, indexes.toArray());
         };
@@ -75,6 +80,7 @@ module {
 
     public func mapOperatorsForUpgrade(operators: HashMap.HashMap<TokenIndex, Buffer.Buffer<Principal>>): [(TokenIndex, [Principal])] {
         let _OperatorEntries: Buffer.Buffer<(TokenIndex, [Principal])> = Buffer.Buffer(0);
+        
         for((token, indexes) in operators.entries()) {
             _OperatorEntries.add(token, indexes.toArray());
         };
